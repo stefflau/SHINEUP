@@ -1,15 +1,15 @@
-// src/app/api/send-program-email/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { NextRequest, NextResponse } from "next/server";
+import { Resend } from 'resend';
+
+const resend = new Resend('re_LoQmxGYg_4BdekKiiYxqz1AjPjMW3ekVb');
 
 export async function POST(req: NextRequest) {
   try {
     const { to, subject, html } = await req.json();
 
     const { error } = await resend.emails.send({
-      from: "SHINEUP Coach <noreply@tondomaine.com>",
+      from: "SHINEUP Coach <onboarding@resend.dev>",
       to,
       subject,
       html,

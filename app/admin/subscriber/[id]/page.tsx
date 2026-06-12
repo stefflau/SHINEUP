@@ -74,8 +74,8 @@ export default function SubscriberPage() {
     setLoading(true);
     const [{ data: prof }, { data: fd }, { data: pl }, { data: chks }, { data: ns }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("form_data").select("*").eq("user_id", userId).single(),
-      supabase.from("coaching_plan").select("*").eq("user_id", userId).order("generated_at", { ascending: false }).limit(1).single(),
+      supabase.from("form_data").select("*").eq("user_id", userId).maybeSingle(),
+      supabase.from("coaching_plan").select("*").eq("user_id", userId).order("generated_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("weekly_checkins").select("*").eq("user_id", userId).order("week_number", { ascending: false }),
       supabase.from("admin_notes").select("*").eq("user_id", userId).order("created_at", { ascending: false }),
     ]);

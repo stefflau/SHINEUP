@@ -1,4 +1,3 @@
-// src/app/api/generate-program/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { generateCoachProgram } from "../../lib/coachEngine";
 import { createClient } from "@supabase/supabase-js";

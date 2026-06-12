@@ -97,7 +97,7 @@ export default function DashboardPage() {
         supabase.from("profiles").select("*").eq("id", uid).single(),
         supabase.from("coaching_plan").select("*").eq("user_id", uid).eq("status", "active").single(),
         supabase.from("weekly_checkins").select("*").eq("user_id", uid).order("week_number", { ascending: false }),
-        supabase.from("form_data").select("*").eq("user_id", uid).single(),
+       supabase.from("coaching_plan").select("*").eq("user_id", uid).eq("status", "active").order("generated_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       setProfile(prof);
@@ -131,9 +131,9 @@ export default function DashboardPage() {
   };
 
   const prog = plan?.program_json;
-  const daysLeft = profile?.subscription_end
-    ? Math.max(0, Math.ceil((new Date(profile.subscription_end).getTime() - Date.now()) / 86400000))
-    : 0;
+ const daysLeft = profile?.subscription_end
+  ? Math.max(0, Math.ceil((new Date(profile.subscription_end).getTime() - new Date().getTime()) / 86400000))
+  : 0;
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: "8px",

@@ -1,5 +1,5 @@
 // src/lib/coachEngine.ts
-// Version Mistral AI avec règles nutritionnelles intégrées
+// Version Mistral AI avec règles nutritionnelles intégrées + aliments malgaches
 
 export type FormData = {
   name: string; age: string; gender: string; city: string;
@@ -13,344 +13,259 @@ export type FormData = {
   motivation: string; tried_before: string;
 };
 
+export type FoodItem = {
+  name: string; portion: string; calories: number;
+  protein_g: number; carbs_g: number; fat_g: number; notes: string;
+};
+
+export type FoodLibrary = {
+  proteins: FoodItem[]; carbs: FoodItem[]; fats: FoodItem[];
+  vegetables: FoodItem[]; fruits: FoodItem[]; snacks: FoodItem[];
+};
+
 export type CoachProgram = {
   summary: string;
+  coach_case_analysis: string;
   nutrition: {
-    daily_calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fats_g: number;
-    hydration_L: number;
-    meal_plan_example: string;
-    foods_to_favor: string[];
-    foods_to_avoid: string[];
-    supplements: string[];
+    daily_calories: number; protein_g: number; carbs_g: number;
+    fats_g: number; hydration_L: number; meal_plan_example: string;
+    foods_to_favor: string[]; foods_to_avoid: string[]; supplements: string[];
   };
+  food_library: FoodLibrary;
   training: {
     weekly_schedule: Array<{
-      day: string;
-      type: string;
-      duration_min: number;
+      day: string; type: string; duration_min: number;
       exercises: Array<{ name: string; sets: string; reps: string; rest: string; notes?: string }>;
     }>;
     cardio_recommendation: string;
     rest_advice: string;
+    progression_guide: string;
   };
   lifestyle: {
-    sleep_tips: string;
-    stress_management: string;
-    daily_habits: string[];
-    things_to_avoid: string[];
-    morning_routine: string[];
-    evening_routine: string[];
-    glow_up_tips: string[];
+    sleep_tips: string; stress_management: string;
+    daily_habits: string[]; things_to_avoid: string[];
+    morning_routine: string[]; evening_routine: string[]; glow_up_tips: string[];
   };
   monthly_progression: Array<{
-    month: number;
-    focus: string;
-    objective: string;
-    expected_change: string;
+    month: number; focus: string; objective: string;
+    expected_change: string; checklist: string[];
   }>;
   expected_results: string;
   coach_message: string;
+  coaching_notes: string;
 };
 
 // ─── Calculs métaboliques ─────────────────────────────────────────────────────
-function calcBMI(weightKg: number, heightCm: number): number {
-  const h = heightCm / 100;
-  return Math.round((weightKg / (h * h)) * 10) / 10;
+function calcBMI(w: number, h: number) { return Math.round((w / ((h/100) ** 2)) * 10) / 10; }
+
+function calcBMR(w: number, h: number, age: number, gender: string) {
+  return gender === "Femme" || gender === "female"
+    ? 10*w + 6.25*h - 5*age - 161
+    : 10*w + 6.25*h - 5*age + 5;
 }
 
-function calcBMR(weight: number, height: number, age: number, gender: string): number {
-  if (gender === "Femme" || gender === "female") {
-    return 10 * weight + 6.25 * height - 5 * age - 161;
-  }
-  return 10 * weight + 6.25 * height - 5 * age + 5;
-}
-
-function activityFactor(lifestyle: string): number {
+function activityFactor(lifestyle: string) {
   const map: Record<string, number> = {
-    "Sédentaire (bureau)": 1.2,
-    "Actif léger": 1.375,
-    "Actif moyen": 1.55,
-    "Très actif (travail physique)": 1.725,
+    "Sédentaire (bureau)": 1.2, "Actif léger": 1.375,
+    "Actif moyen": 1.55, "Très actif (travail physique)": 1.725,
   };
   return map[lifestyle] ?? 1.375;
 }
 
-// ─── Calcul des macros selon l'objectif ──────────────────────────────────────
 function calcMacros(tdee: number, goal: string, weight: number) {
-  let calories: number;
-  let proteinRatio: number;
-  let fatRatio: number;
-
+  let calories: number, proteinRatio: number, fatRatio: number;
   if (goal.toLowerCase().includes("perte") || goal.toLowerCase().includes("poids")) {
-    calories = Math.round(tdee * 0.8); // déficit 20%
-    proteinRatio = 2.2; // g/kg — protéines élevées pour préserver le muscle
-    fatRatio = 0.25;    // 25% des calories en lipides
+    calories = Math.round(tdee * 0.8); proteinRatio = 2.2; fatRatio = 0.25;
   } else if (goal.toLowerCase().includes("prise") || goal.toLowerCase().includes("masse")) {
-    calories = Math.round(tdee * 1.1); // surplus 10%
-    proteinRatio = 2.0;
-    fatRatio = 0.25;
+    calories = Math.round(tdee * 1.1); proteinRatio = 2.0; fatRatio = 0.25;
   } else if (goal.toLowerCase().includes("recomposition") || goal.toLowerCase().includes("reconstituer")) {
-    calories = Math.round(tdee * 0.95); // légèrement sous maintenance
-    proteinRatio = 2.4; // protéines très élevées pour recomposition
-    fatRatio = 0.28;
-  } else { // remise en forme, endurance, tonification
-    calories = Math.round(tdee * 0.9);
-    proteinRatio = 1.8;
-    fatRatio = 0.27;
+    calories = Math.round(tdee * 0.95); proteinRatio = 2.4; fatRatio = 0.28;
+  } else {
+    calories = Math.round(tdee * 0.9); proteinRatio = 1.8; fatRatio = 0.27;
   }
-
   const protein = Math.round(weight * proteinRatio);
   const fats = Math.round((calories * fatRatio) / 9);
   const carbs = Math.round((calories - protein * 4 - fats * 9) / 4);
   const hydration = goal.toLowerCase().includes("perte") ? 2.5 : 2.0;
-
   return { calories, protein, fats, carbs, hydration };
 }
 
-// ─── Règles nutritionnelles selon les conditions de santé ────────────────────
-function getNutritionalRules(d: FormData): {
-  forbidden: string[];
-  mandatory: string[];
-  warnings: string[];
-  supplements: string[];
-} {
-  const forbidden: string[] = [];
-  const mandatory: string[] = [];
-  const warnings: string[] = [];
-  const supplements: string[] = [];
-
+// ─── Règles nutritionnelles ───────────────────────────────────────────────────
+function getNutritionalRules(d: FormData) {
+  const forbidden: string[] = [], mandatory: string[] = [];
+  const warnings: string[] = [], supplements: string[] = [];
   const health = d.health_issues?.join(" ").toLowerCase() || "";
-  const meds = d.medications?.toLowerCase() || "";
   const allergies = d.allergies?.toLowerCase() || "";
   const diet = d.diet?.toLowerCase() || "";
 
-  // ── Intolérance lactose ────────────────────────────────────────────────────
   if (allergies.includes("lactose") || diet.includes("lactose")) {
     forbidden.push("Lait de vache, fromage, yaourt classique, crème fraîche, beurre");
-    mandatory.push("Lait végétal (amande, coco, avoine, soja), yaourt végétal, fromage végétal");
-    supplements.push("Calcium 1000mg/jour (car pas de produits laitiers) — matin avec repas");
+    mandatory.push("Lait de soja local, lait de coco, yaourt végétal");
+    supplements.push("Calcium 1000mg/jour — matin avec repas");
     supplements.push("Vitamine D3 1000 UI/jour — matin");
   }
-
-  // ── SOPK / déséquilibre hormonal ──────────────────────────────────────────
-  if (health.includes("hormonal") || health.includes("sopk") || meds.includes("fémionne") || meds.includes("femionne") || health.includes("thyroïde") || health.includes("thyroide")) {
-    forbidden.push("Sucre raffiné, sirop de maïs, sodas sucrés, jus industriels, pâtisseries industrielles");
-    forbidden.push("Huiles végétales raffinées (tournesol, maïs), aliments ultra-transformés");
-    mandatory.push("Aliments à index glycémique bas : quinoa, patate douce, légumineuses, avoine");
-    mandatory.push("Légumes verts à chaque repas (brocoli, épinards, courgette, haricots verts)");
-    mandatory.push("Graisses saines : avocat, huile d'olive, noix, graines de lin, poisson gras");
-    mandatory.push("Protéines maigres à chaque repas pour stabiliser la glycémie");
-    warnings.push("SOPK : favoriser une alimentation anti-inflammatoire et à IG bas pour réguler l'insuline");
-    warnings.push("Éviter le jeûne prolongé — manger toutes les 3-4h pour stabiliser les hormones");
-    supplements.push("Magnésium bisglycinate 300mg/jour — soir avant coucher (aide SOPK et sommeil)");
-    supplements.push("Oméga-3 1000mg/jour — avec repas (anti-inflammatoire, aide régulation hormonale)");
-    supplements.push("Inositol (Myo-inositol) 2g/jour — si possible, très efficace pour le SOPK");
-    supplements.push("Vitamine B6 50mg/jour — aide l'équilibre hormonal");
+  if (health.includes("hormonal") || health.includes("sopk")) {
+    forbidden.push("Sucre raffiné, sodas sucrés, jus industriels, pâtisseries industrielles");
+    mandatory.push("Aliments à IG bas : patate douce, légumineuses, riz complet, avoine");
+    mandatory.push("Légumes verts à chaque repas : brèdes, chou, haricots verts");
+    warnings.push("SOPK : alimentation anti-inflammatoire et IG bas pour réguler l'insuline");
+    warnings.push("Manger toutes les 3-4h pour stabiliser les hormones");
+    supplements.push("Magnésium 300mg/jour — soir");
+    supplements.push("Oméga-3 1000mg/jour — avec repas");
   }
-
-  // ── Problèmes cardiaques ───────────────────────────────────────────────────
-  if (health.includes("cardiaque") || health.includes("cardio") || health.includes("tension") || health.includes("hypertension")) {
-    forbidden.push("Sel en excès (max 5g/jour), charcuterie, plats industriels très salés");
-    forbidden.push("Graisses saturées en excès : viande rouge grasse, friture, beurre en grande quantité");
-    forbidden.push("Caféine en excès (max 1 café/jour), alcool");
-    mandatory.push("Poissons gras 2-3x/semaine (saumon, sardines, maquereau) — Oméga-3 cardioprotecteurs");
-    mandatory.push("Fruits et légumes riches en potassium : banane, épinards, patate douce, avocat");
-    mandatory.push("Grains entiers : avoine, quinoa, riz complet");
-    warnings.push("Problèmes cardiaques : éviter les efforts intenses d'un coup — montée progressive OBLIGATOIRE");
-    warnings.push("Toujours s'échauffer 10 min avant l'entraînement et récupérer 10 min après");
+  if (health.includes("cardiaque") || health.includes("tension") || health.includes("hypertension")) {
+    forbidden.push("Sel en excès, charcuterie, friture, alcool, caféine en excès");
+    mandatory.push("Poisson local 2-3x/semaine, patate douce, banane, épinards/brèdes");
+    warnings.push("Cardio : intensité modérée uniquement, jamais HIIT intense, échauffement 10min obligatoire");
     supplements.push("Oméga-3 1000mg/jour — cardioprotecteur");
-    supplements.push("Magnésium 300mg/jour — régule le rythme cardiaque");
-    supplements.push("Coenzyme Q10 100mg/jour — si possible, excellent pour la santé cardiaque");
+    supplements.push("Magnésium 300mg/jour — régule rythme cardiaque");
   }
-
-  // ── Diabète / résistance insuline ─────────────────────────────────────────
-  if (health.includes("diabète") || health.includes("diabete")) {
-    forbidden.push("Sucres rapides : bonbons, sodas, jus de fruits, pain blanc, riz blanc en excès");
-    mandatory.push("Féculents à IG bas uniquement : patate douce, légumineuses, quinoa, avoine");
-    mandatory.push("Fibres à chaque repas pour ralentir l'absorption du glucose");
-    warnings.push("Contrôler la glycémie avant et après l'entraînement");
-    supplements.push("Chrome 200mcg/jour — améliore la sensibilité à l'insuline");
-    supplements.push("Cannelle 1g/jour avec les repas — aide à réguler la glycémie");
+  if (d.goal?.toLowerCase().includes("perte")) {
+    mandatory.push("Protéines maigres à chaque repas : poulet, poisson, oeufs, légumineuses");
+    mandatory.push("Légumes à volonté : brèdes, chou, carottes, tomates, concombre");
+    forbidden.push("Grignotage, sauces industrielles, alcool");
   }
-
-  // ── Régime vegan/végétarien ───────────────────────────────────────────────
-  if (diet.includes("vegan") || diet.includes("végétalien")) {
-    mandatory.push("Associations protéines complètes : légumineuses + céréales (riz+lentilles, pain+houmous)");
-    mandatory.push("Tofu, tempeh, edamame, seitan comme sources de protéines principales");
-    forbidden.push("Toute protéine animale");
-    supplements.push("Vitamine B12 1000mcg/semaine — INDISPENSABLE pour les vegans");
-    supplements.push("Fer non-héminique + Vitamine C pour meilleure absorption — midi");
-    supplements.push("Zinc 15mg/jour — souvent déficitaire en alimentation végane");
-    supplements.push("Protéine végétale en poudre (pois/chanvre) si objectif musculaire");
-  } else if (diet.includes("végétarien")) {
-    mandatory.push("Oeufs, produits laitiers (si tolérés) pour compléter les protéines");
-    mandatory.push("Légumineuses quotidiennes : lentilles, pois chiches, haricots");
-    supplements.push("Vitamine B12 500mcg/jour");
-    supplements.push("Fer + Vitamine C si fatigue fréquente");
+  if (d.goal?.toLowerCase().includes("prise")) {
+    mandatory.push("Manger toutes les 3h, repas post-training dans les 30min");
+    supplements.push("Créatine monohydrate 5g/jour");
   }
-
-  // ── Allergie gluten ────────────────────────────────────────────────────────
-  if (allergies.includes("gluten")) {
-    forbidden.push("Blé, orge, seigle, épeautre, kamut — pain classique, pâtes classiques, biscuits");
-    mandatory.push("Alternatives sans gluten : riz, quinoa, maïs, sarrasin, millet, patate douce");
-  }
-
-  // ── Objectif perte de poids ───────────────────────────────────────────────
-  if (d.goal?.toLowerCase().includes("perte") || d.goal?.toLowerCase().includes("poids")) {
-    mandatory.push("Protéines maigres à chaque repas : blanc de poulet, dinde, thon, oeufs, légumineuses");
-    mandatory.push("Légumes non-féculents à volonté : courgette, concombre, salade, tomate, épinards");
-    mandatory.push("Féculents uniquement le matin et avant l'entraînement");
-    forbidden.push("Grignotage entre les repas, sauces industrielles, vinaigrettes grasses");
-    forbidden.push("Alcool — 7 kcal/g, favorise le stockage des graisses");
-    warnings.push("Manger lentement et s'arrêter à 80% de satiété");
-    warnings.push("Préparer les repas à l'avance (meal prep) pour éviter les écarts");
-  }
-
-  // ── Objectif prise de masse ───────────────────────────────────────────────
-  if (d.goal?.toLowerCase().includes("prise") || d.goal?.toLowerCase().includes("masse")) {
-    mandatory.push("Manger toutes les 3h — ne jamais être en déficit calorique");
-    mandatory.push("Repas post-entraînement dans les 30min : protéines + glucides rapides");
-    mandatory.push("Féculents à chaque repas : riz, pâtes, pain complet, patate douce");
-    supplements.push("Créatine monohydrate 5g/jour — avant ou après entraînement (très efficace prise de masse)");
-  }
-
-  // ── Budget serré ──────────────────────────────────────────────────────────
-  if (d.food_budget?.includes("erré") || d.food_budget?.includes("50")) {
-    mandatory.push("Protéines économiques : oeufs, thon en boîte, légumineuses sèches, blanc de poulet");
-    mandatory.push("Légumes de saison et locaux — plus économiques et nutritifs");
-    warnings.push("Budget alimentaire serré : privilégier les achats en vrac et cuisiner soi-même");
-  }
-
   return { forbidden, mandatory, warnings, supplements };
 }
 
-// ─── Règles sportives selon conditions de santé ───────────────────────────────
-function getSportRules(d: FormData): string {
+// ─── Règles sportives ─────────────────────────────────────────────────────────
+function getSportRules(d: FormData) {
   const health = d.health_issues?.join(" ").toLowerCase() || "";
   const rules: string[] = [];
-
   if (health.includes("cardiaque") || health.includes("cardio")) {
-    rules.push("CARDIO : intensité modérée uniquement (60-70% FC max), jamais d'HIIT intense, toujours échauffement 10min");
-    rules.push("Surveiller la fréquence cardiaque — ne pas dépasser 140 bpm au début");
-    rules.push("Commencer par 15-20 min de cardio léger et augmenter progressivement de 5 min par semaine");
+    rules.push("Cardio modéré uniquement (60-70% FC max), max 140 bpm, échauffement 10min obligatoire");
   }
-
-  if (health.includes("dos") || health.includes("hernie")) {
-    rules.push("Éviter : soulevé de terre, squat avec charge lourde, exercices qui compriment la colonne");
-    rules.push("Renforcer : gainage, muscles du dos profonds (bird-dog, superman), étirements lombaires");
-  }
-
-  if (health.includes("genou")) {
-    rules.push("Éviter : jumping squats, fentes avec impact, course sur asphalte dur");
-    rules.push("Préférer : vélo, natation, squats partiels, leg press à amplitude réduite");
-  }
-
   if (health.includes("hormonal") || health.includes("sopk")) {
-    rules.push("SOPK : éviter le surentraînement qui augmente le cortisol et aggrave les déséquilibres hormonaux");
-    rules.push("Maximum 5 séances/semaine, intégrer des séances de récupération active (yoga, marche)");
-    rules.push("Privilégier la musculation douce + cardio modéré plutôt que HIIT intense");
+    rules.push("Éviter surentraînement, max 5 séances/semaine, récupération active 2x/semaine");
   }
-
   if (d.fitness_level?.includes("Débutant")) {
-    rules.push("Débutant : commencer par des mouvements simples sans charge, maîtriser la technique avant d'augmenter le poids");
-    rules.push("Progression : augmenter la charge de 2.5kg maximum par semaine");
+    rules.push("Charges légères, maîtriser technique avant d'augmenter, +2.5kg max/semaine");
   }
-
-  return rules.length > 0 ? rules.join("\n- ") : "Pas de restriction sportive particulière";
+  return rules.length > 0 ? rules.join(" | ") : "Pas de restriction sportive particulière";
 }
 
-
-// ─── Routine de vie & Glow Up intégrée ───────────────────────────────────────
-function getLifestyleRoutine(d: FormData): {
-  morningRoutine: string[];
-  eveningRoutine: string[];
-  glowUpTips: string[];
-  sleepRules: string[];
-  stressRules: string[];
-} {
+// ─── Routines lifestyle ───────────────────────────────────────────────────────
+function getLifestyleRoutine(d: FormData) {
   const health = d.health_issues?.join(" ").toLowerCase() || "";
-  const stress = d.stress || 5;
-  const sleep = d.sleep || 7;
-
-  // ── Routine matin universelle SHINEUP ──────────────────────────────────────
   const morningRoutine = [
-    "🌅 Réveil à heure fixe tous les jours (même le weekend) — régule l'horloge biologique",
-    "💧 Boire 500ml d'eau tiède avec citron dès le réveil — hydrate, active le métabolisme, détoxifie",
-    "🧘 5-10 minutes d'étirements ou yoga doux au lit ou au sol — réveille le corps en douceur",
-    "☀️ S'exposer à la lumière naturelle dans les 30 premières minutes — régule le cortisol et la sérotonine",
-    "🚫 Ne pas regarder son téléphone pendant les 30 premières minutes — protège l'énergie mentale",
-    "🥣 Petit-déjeuner riche en protéines dans l'heure suivant le réveil — stabilise la glycémie toute la journée",
-    "📝 Écrire 3 intentions pour la journée — focalise l'esprit et booste la motivation",
+    "🌅 Réveil à heure fixe tous les jours — régule l'horloge biologique",
+    "💧 Boire 500ml d'eau tiède dès le réveil — hydrate et active le métabolisme",
+    "🧘 5-10 min d'étirements doux — réveille le corps en douceur",
+    "☀️ S'exposer à la lumière naturelle dans les 30 premières minutes",
+    "🚫 Ne pas regarder son téléphone pendant 30 min — protège l'énergie mentale",
+    "🥣 Petit-déjeuner riche en protéines dans l'heure — stabilise la glycémie",
+    "📝 Écrire 3 intentions pour la journée — focalise et motive",
   ];
-
-  // ── Routine soir universelle SHINEUP ───────────────────────────────────────
   const eveningRoutine = [
-    "🌙 Commencer à ralentir 2h avant le coucher — pas d'activité intense le soir",
-    "📵 Éteindre les écrans (téléphone, TV) 1h avant de dormir — la lumière bleue bloque la mélatonine",
-    "🛁 Douche tiède ou froide le soir — fait baisser la température corporelle et favorise l'endormissement",
-    "📖 15-20 minutes de lecture ou journaling — calme le système nerveux",
-    "🌿 Tisane relaxante : camomille, valériane, mélisse ou ashwagandha — aide à décrocher",
-    "🧘 Exercice de respiration 4-7-8 : inspirer 4s, retenir 7s, expirer 8s (x4) — réduit l'anxiété",
-    "❄️ Chambre fraîche (18-20°C idéalement) et obscurité totale pour un sommeil profond",
-    "🙏 Gratitude : noter 3 choses positives de la journée — reprogramme le cerveau vers le positif",
+    "🌙 Ralentir 2h avant le coucher — pas d'activité intense le soir",
+    "📵 Éteindre les écrans 1h avant de dormir — la lumière bleue bloque la mélatonine",
+    "🛁 Douche tiède — fait baisser la température et favorise l'endormissement",
+    "📖 15-20 min de lecture ou journaling — calme le système nerveux",
+    "🌿 Tisane camomille ou valériane — aide à décrocher",
+    "🧘 Respiration 4-7-8 : inspirer 4s, retenir 7s, expirer 8s (x4)",
+    "🙏 Gratitude : noter 3 choses positives de la journée",
   ];
-
-  // ── Règles sommeil selon profil ────────────────────────────────────────────
-  const sleepRules: string[] = [];
-  if (sleep < 6) {
-    sleepRules.push("⚠️ Tu dors moins de 6h — PRIORITÉ ABSOLUE : le manque de sommeil sabote la perte de poids, la récupération musculaire et les hormones");
-    sleepRules.push("Viser 7-9h de sommeil par nuit — c'est pendant le sommeil que le corps brûle les graisses et reconstruit les muscles");
-    sleepRules.push("Coucher et lever à heures fixes — même le weekend, décalage max 30 minutes");
-  } else if (sleep < 7) {
-    sleepRules.push("Ajouter 30-45 minutes de sommeil progressivement — ton corps a besoin de 7-8h pour optimiser la récupération");
-  } else {
-    sleepRules.push("Bon niveau de sommeil — maintenir cette régularité, c'est un de tes meilleurs atouts pour progresser");
-  }
-
-  if (health.includes("hormonal") || health.includes("sopk")) {
-    sleepRules.push("SOPK : le sommeil régule directement les hormones — dormir avant 23h est essentiel pour l'équilibre hormonal");
-    sleepRules.push("Éviter de manger dans les 2h avant le coucher — stabilise l'insuline nocturne");
-  }
-
-  // ── Gestion du stress selon niveau ────────────────────────────────────────
-  const stressRules: string[] = [];
-  if (stress >= 7) {
-    stressRules.push("⚠️ Niveau de stress élevé — le cortisol chronique favorise le stockage abdominal et bloque la perte de poids");
-    stressRules.push("Technique urgence stress : respiration carrée (4s inspir, 4s hold, 4s expir, 4s hold) — à faire dès que le stress monte");
-    stressRules.push("Intégrer 10 minutes de marche après le déjeuner — réduit le cortisol de 15-20%");
-    stressRules.push("Limiter la caféine à 1 café le matin — la caféine amplifie la réponse au stress");
-  } else if (stress >= 5) {
-    stressRules.push("Stress modéré — intégrer une pratique de relaxation 3x/semaine minimum");
-    stressRules.push("Yoga, méditation ou marche en nature sont excellents pour réguler le système nerveux");
-  } else {
-    stressRules.push("Bon niveau de gestion du stress — maintenir les pratiques actuelles");
-  }
-
-  // ── Glow Up tips universels SHINEUP ───────────────────────────────────────
   const glowUpTips = [
-    "✨ PEAU : boire 2-2.5L d'eau/jour — c'est le meilleur soin de peau qui existe, hydrate de l'intérieur",
-    "✨ PEAU : manger des aliments riches en antioxydants (fruits rouges, thé vert, légumes colorés) — combat le vieillissement cellulaire",
-    "✨ PEAU : limiter le sucre raffiné — il provoque de l'inflammation et de l'acné hormonale",
-    "✨ CHEVEUX : protéines suffisantes + fer + zinc + biotine — les cheveux sont faits de kératine (protéine)",
-    "✨ CORPS : la musculation sculpte le corps là où le cardio seul ne le fait pas — le muscle donne la forme",
-    "✨ ÉNERGIE : exit le sucre rapide qui donne un pic puis un crash — miser sur les glucides complexes pour une énergie stable",
-    "✨ MENTAL : l'exercice libère des endorphines et de la dopamine — c'est le meilleur antidépresseur naturel",
-    "✨ POSTURE : renforcer le gainage et les muscles du dos — une bonne posture change complètement la silhouette",
-    "✨ DIGESTION : mâcher lentement et manger sans écrans — améliore l'absorption des nutriments et réduit les ballonnements",
-    "✨ CYCLE HORMONAL : synchroniser l'entraînement avec ton cycle — phase folliculaire pour l'intensité, phase lutéale pour la douceur",
+    "✨ PEAU : boire 2-2.5L d'eau/jour — meilleur soin de peau qui existe",
+    "✨ PEAU : manger papaye, goyave, mangue — riches en vitamines et antioxydants",
+    "✨ PEAU : limiter sucre raffiné — provoque acné hormonale",
+    "✨ CHEVEUX : protéines + brèdes mouroum (moringa) riche en fer et biotine",
+    "✨ CORPS : musculation sculpte là où le cardio seul ne le fait pas",
+    "✨ ÉNERGIE : glucides complexes (riz complet, patate douce) pour énergie stable",
+    "✨ MENTAL : le sport libère endorphines et dopamine — antidépresseur naturel",
+    "✨ DIGESTION : mâcher lentement — améliore absorption et réduit ballonnements",
   ];
-
-  // Ajouts spécifiques SOPK
   if (health.includes("hormonal") || health.includes("sopk")) {
-    glowUpTips.push("✨ SOPK GLOW UP : le sport régulier + alimentation IG bas peut réduire naturellement les symptômes du SOPK de 30-40%");
-    glowUpTips.push("✨ SOPK PEAU : éviter les produits laitiers et le sucre — ils stimulent la production de sébum et l'acné hormonale");
-    glowUpTips.push("✨ SOPK CHEVEUX : les oméga-3 + zinc + vitamine B6 aident à réduire la chute de cheveux liée aux déséquilibres hormonaux");
+    glowUpTips.push("✨ SOPK : sport + IG bas réduit naturellement les symptômes de 30-40%");
+    glowUpTips.push("✨ SOPK PEAU : éviter sucre et produits laitiers — stimulent sébum et acné");
+  }
+  const sleepRules = d.sleep < 6
+    ? ["⚠️ Moins de 6h de sommeil — PRIORITÉ : viser 7-9h, le corps brûle les graisses en dormant"]
+    : ["Bon niveau de sommeil — maintenir cette régularité"];
+  if (health.includes("hormonal") || health.includes("sopk")) {
+    sleepRules.push("SOPK : dormir avant 23h est essentiel pour l'équilibre hormonal");
+  }
+  const stressRules = d.stress >= 7
+    ? ["⚠️ Stress élevé — cortisol chronique bloque la perte de poids", "Respiration carrée 4s/4s/4s/4s dès que stress monte"]
+    : ["Stress modéré — yoga, méditation ou marche 3x/semaine"];
+  return { morningRoutine, eveningRoutine, glowUpTips, sleepRules, stressRules };
+}
+
+// ─── Aliments Madagascar ──────────────────────────────────────────────────────
+function getMadagascarFoodLibrary(d: FormData): FoodLibrary {
+  const diet = d.diet?.toLowerCase() || "";
+  const allergies = d.allergies?.toLowerCase() || "";
+
+  const proteins: FoodItem[] = [];
+  if (!diet.includes("vegan") && !diet.includes("végét")) {
+    proteins.push({ name: "Poulet local grillé", portion: "100g", calories: 165, protein_g: 31, carbs_g: 0, fat_g: 3.6, notes: "Très accessible à Tana, ~3000-5000 Ar/100g" });
+    proteins.push({ name: "Tilapia grillé", portion: "100g", calories: 128, protein_g: 26, carbs_g: 0, fat_g: 2.7, notes: "Poisson local économique" });
+    proteins.push({ name: "Sardines en boîte (Saupiquet)", portion: "100g", calories: 208, protein_g: 25, carbs_g: 0, fat_g: 12, notes: "Disponible partout, riche en oméga-3" });
+    proteins.push({ name: "Œuf entier", portion: "1 unité (60g)", calories: 86, protein_g: 6, carbs_g: 0.6, fat_g: 6, notes: "~500 Ar/unité, le moins cher" });
+  }
+  proteins.push({ name: "Lentilles cuites", portion: "100g", calories: 116, protein_g: 9, carbs_g: 20, fat_g: 0.4, notes: "Très économique, riche en fer" });
+  proteins.push({ name: "Haricots rouges cuits", portion: "100g", calories: 127, protein_g: 8.7, carbs_g: 23, fat_g: 0.5, notes: "Base alimentaire malgache" });
+  if (!allergies.includes("soja")) {
+    proteins.push({ name: "Tofu local", portion: "100g", calories: 144, protein_g: 17, carbs_g: 2.8, fat_g: 9, notes: "Épiceries asiatiques à Tana" });
   }
 
-  return { morningRoutine, eveningRoutine, glowUpTips, sleepRules, stressRules };
+  const carbs: FoodItem[] = [
+    { name: "Riz complet cuit", portion: "100g", calories: 130, protein_g: 2.7, carbs_g: 28, fat_g: 0.3, notes: "Préférer riz complet, IG plus bas" },
+    { name: "Patate douce cuite", portion: "150g", calories: 130, protein_g: 2, carbs_g: 30, fat_g: 0.1, notes: "Très accessible, riche en vitamines" },
+    { name: "Banane mûre", portion: "1 moyenne (120g)", calories: 107, protein_g: 1.3, carbs_g: 27, fat_g: 0.4, notes: "Fruit le plus accessible à Tana" },
+    { name: "Flocons d'avoine", portion: "50g sec", calories: 180, protein_g: 6, carbs_g: 30, fat_g: 3, notes: "Supermarché, excellent petit-déjeuner" },
+    { name: "Pain complet", portion: "2 tranches (60g)", calories: 150, protein_g: 5, carbs_g: 28, fat_g: 2, notes: "Disponible en supermarché" },
+    { name: "Manioc cuit", portion: "100g", calories: 160, protein_g: 1.4, carbs_g: 38, fat_g: 0.3, notes: "Avec modération, IG élevé" },
+  ];
+
+  const fats: FoodItem[] = [
+  { name: "Huile d'olive", portion: "1 c.à.s (15ml)", calories: 119, protein_g: 0, carbs_g: 0, fat_g: 14, notes: "Meilleure pour santé cardiaque. Supermarché" },
+  { name: "Huile de tournesol", portion: "1 c.à.s (15ml)", calories: 124, protein_g: 0, carbs_g: 0, fat_g: 14, notes: "Disponible partout, riche en vitamine E" },
+  { name: "Huile de soja", portion: "1 c.à.s (15ml)", calories: 120, protein_g: 0, carbs_g: 0, fat_g: 14, notes: "Bonne source oméga-6. Très accessible" },
+  { name: "Huile de colza", portion: "1 c.à.s (15ml)", calories: 120, protein_g: 0, carbs_g: 0, fat_g: 14, notes: "Meilleur ratio oméga-3/oméga-6" },
+  { name: "Cacahuètes nature", portion: "30g", calories: 170, protein_g: 7, carbs_g: 5, fat_g: 14, notes: "Snack économique, ~500-1000 Ar/portion" },
+  { name: "Avocat local", portion: "1/2 (75g)", calories: 120, protein_g: 1.5, carbs_g: 6, fat_g: 11, notes: "Saison mai-octobre, très bon marché" },
+  { name: "Graines de sésame", portion: "20g", calories: 114, protein_g: 3.5, carbs_g: 3.5, fat_g: 9.8, notes: "Riche en calcium et zinc. Marché local" },
+  { name: "Graines de courge", portion: "20g", calories: 113, protein_g: 6, carbs_g: 2, fat_g: 9, notes: "Riche en zinc et magnésium. Marché local" },
+    { name: "Cacahuètes nature", portion: "30g", calories: 170, protein_g: 7, carbs_g: 5, fat_g: 14, notes: "Snack économique, ~500-1000 Ar/portion" },
+    { name: "Avocat local", portion: "1/2 (75g)", calories: 120, protein_g: 1.5, carbs_g: 6, fat_g: 11, notes: "Saison mai-octobre, très bon marché" },
+    { name: "Noix de coco fraîche", portion: "50g râpée", calories: 177, protein_g: 1.7, carbs_g: 7.6, fat_g: 17, notes: "Disponible toute l'année" },
+ { name: "Amandes", portion: "30g", calories: 174, protein_g: 6, carbs_g: 6, fat_g: 15, notes: "Riche en vitamine E et magnésium. Supermarché" },
+{ name: "Graines de chia", portion: "20g", calories: 97, protein_g: 3.3, carbs_g: 8.5, fat_g: 6.2, notes: "Riche en oméga-3 et fibres. Supermarché ou commande en ligne" },
+  ];
+
+  const vegetables: FoodItem[] = [
+  { name: "Brèdes mouroum (moringa)", portion: "100g", calories: 64, protein_g: 9, carbs_g: 8, fat_g: 1.4, notes: "SUPERFOOD local — fer, calcium, vitamines A/C" },
+  { name: "Brèdes anamalaho", portion: "100g", calories: 38, protein_g: 3.5, carbs_g: 6, fat_g: 0.5, notes: "Légume vert local riche en fer et acide folique" },
+  { name: "Brèdes marofo (feuilles patate douce)", portion: "100g", calories: 40, protein_g: 3.2, carbs_g: 6, fat_g: 0.5, notes: "Très riches en vitamines A et C" },
+  { name: "Chou vert", portion: "100g", calories: 25, protein_g: 1.3, carbs_g: 5.8, fat_g: 0.1, notes: "Très économique, riche en vitamine C et K" },
+  { name: "Carottes locales", portion: "100g", calories: 41, protein_g: 0.9, carbs_g: 9.6, fat_g: 0.2, notes: "Toute l'année, riches en bêta-carotène" },
+  { name: "Tomates locales", portion: "100g", calories: 18, protein_g: 0.9, carbs_g: 3.9, fat_g: 0.2, notes: "Riches en lycopène" },
+  { name: "Haricots verts", portion: "100g", calories: 31, protein_g: 1.8, carbs_g: 7, fat_g: 0.1, notes: "Fibres et vitamines" },
+  { name: "Anandrano (cresson d'eau)", portion: "100g", calories: 32, protein_g: 2.3, carbs_g: 4.4, fat_g: 0.4, notes: "Légume aquatique local très nutritif, riche en fer et vitamine C" },
+];
+  ];
+
+  const fruits: FoodItem[] = [
+    { name: "Papaye", portion: "150g", calories: 60, protein_g: 0.7, carbs_g: 15, fat_g: 0.4, notes: "Très accessible, excellente digestion" },
+    { name: "Goyave", portion: "100g", calories: 68, protein_g: 2.6, carbs_g: 14, fat_g: 1, notes: "Très riche en vitamine C, économique" },
+    { name: "Ananas local", portion: "150g", calories: 78, protein_g: 0.9, carbs_g: 19, fat_g: 0.2, notes: "Anti-inflammatoire, toute l'année" },
+    { name: "Mangue locale", portion: "150g", calories: 99, protein_g: 1.4, carbs_g: 25, fat_g: 0.6, notes: "Saison nov-mars, riche en vitamines A et C" },
+    { name: "Pastèque", portion: "200g", calories: 60, protein_g: 1.2, carbs_g: 15, fat_g: 0.2, notes: "Hydratante, peu calorique" },
+  ];
+
+  const snacks: FoodItem[] = [
+    { name: "Cacahuètes + banane", portion: "30g + 1 banane", calories: 277, protein_g: 8, carbs_g: 32, fat_g: 14, notes: "Combo idéal pré/post entraînement, ~1500 Ar" },
+    { name: "Œuf dur", portion: "2 œufs", calories: 172, protein_g: 12, carbs_g: 1.2, fat_g: 12, notes: "Collation portable, ~1000 Ar" },
+    { name: "Papaye fraîche", portion: "150g", calories: 60, protein_g: 0.7, carbs_g: 15, fat_g: 0.4, notes: "Collation légère et digestive" },
+    { name: "Pain complet + haricots écrasés", portion: "1 tranche + 50g", calories: 150, protein_g: 7, carbs_g: 25, fat_g: 2, notes: "Houmous local économique" },
+  ];
+
+  return { proteins, carbs, fats, vegetables, fruits, snacks };
 }
 
 // ─── Construction du prompt ───────────────────────────────────────────────────
@@ -366,115 +281,87 @@ function buildPrompt(d: FormData): string {
   const sportRules = getSportRules(d);
   const routine = getLifestyleRoutine(d);
 
-  return `Tu es un coach sportif et nutritionniste expert. Génère un programme complet sur 3 mois en respectant STRICTEMENT les règles nutritionnelles et sportives ci-dessous.
+  return `Tu es un coach sportif et nutritionniste expert. Génère un programme sur 3 mois STRICT et CONCIS.
 
 ## PROFIL
-- Nom : ${d.name} | Âge : ${d.age} ans | Genre : ${d.gender} | Ville : ${d.city}
-- Poids : ${d.weight} kg | Taille : ${d.height} cm | IMC : ${bmi}
-- Morphologie : ${d.morphology || "Non précisé"} | Poids cible : ${d.target_weight ? d.target_weight + " kg" : "Non précisé"}
-- Objectif : ${d.goal} | Délai : ${d.deadline || "3 mois"}
-- Motivation : ${d.motivation || "Non précisé"}
+- ${d.name} | ${d.age} ans | ${d.gender} | ${d.city}
+- Poids: ${d.weight}kg | Taille: ${d.height}cm | IMC: ${bmi} | Cible: ${d.target_weight || "Non précisé"}kg
+- Objectif: ${d.goal} | Délai: ${d.deadline || "3 mois"}
+- Niveau sport: ${d.fitness_level} | Sports: ${d.sports?.join(", ")}
+- Équipement: ${d.equipment} | Jours: ${d.training_days?.join(", ")} | Durée: ${d.session_duration}
 
-## MACROS CALCULÉS (UTILISE CES VALEURS EXACTES)
-- Calories : ${macros.calories} kcal/jour
-- Protéines : ${macros.protein}g/jour (${Math.round(macros.protein * 4)} kcal)
-- Glucides : ${macros.carbs}g/jour (${Math.round(macros.carbs * 4)} kcal)
-- Lipides : ${macros.fats}g/jour (${Math.round(macros.fats * 9)} kcal)
-- Hydratation : ${macros.hydration}L/jour minimum
+## MACROS EXACTS (ne pas modifier)
+- Calories: ${macros.calories} kcal | Protéines: ${macros.protein}g | Glucides: ${macros.carbs}g | Lipides: ${macros.fats}g | Eau: ${macros.hydration}L
 
-## RÈGLES NUTRITIONNELLES OBLIGATOIRES
-${nutritionRules.forbidden.length > 0 ? `
-❌ ALIMENTS STRICTEMENT INTERDITS pour ce profil :
-- ${nutritionRules.forbidden.join("\n- ")}` : ""}
+## SANTÉ
+- Antécédents: ${d.health_issues?.join(", ") || "Aucun"}
+- Médicaments: ${d.medications || "Aucun"}
+- Règles sport: ${sportRules}
 
-${nutritionRules.mandatory.length > 0 ? `
-✅ ALIMENTS OBLIGATOIRES à intégrer :
-- ${nutritionRules.mandatory.join("\n- ")}` : ""}
+## ALIMENTATION
+- Régime: ${d.diet} | Allergies: ${d.allergies || "Aucune"}
+- Budget: ${d.food_budget}
+${nutritionRules.forbidden.length > 0 ? `- INTERDITS: ${nutritionRules.forbidden.join(", ")}` : ""}
+${nutritionRules.mandatory.length > 0 ? `- OBLIGATOIRES: ${nutritionRules.mandatory.join(", ")}` : ""}
+${nutritionRules.supplements.length > 0 ? `- COMPLÉMENTS: ${nutritionRules.supplements.join(" | ")}` : ""}
 
-${nutritionRules.warnings.length > 0 ? `
-⚠️ AVERTISSEMENTS IMPORTANTS :
-- ${nutritionRules.warnings.join("\n- ")}` : ""}
-
-## COMPLÉMENTS RECOMMANDÉS (utilise exactement cette liste)
-${nutritionRules.supplements.length > 0
-  ? nutritionRules.supplements.map(s => `- ${s}`).join("\n")
-  : "- Aucun complément spécifique nécessaire"}
-
-## RÈGLES SPORTIVES OBLIGATOIRES
-- ${sportRules}
-- Jours disponibles : ${d.training_days?.join(", ")}
-- Durée séance : ${d.session_duration}
-- Moment : ${d.training_time}
-- Équipement : ${d.equipment}
-- Niveau : ${d.fitness_level}
-- Sports pratiqués : ${d.sports?.join(", ")}
-
-## MODE DE VIE
-- Stress : ${d.stress}/10 | Sommeil : ${d.sleep}h | Énergie : ${d.energy}/10
-- Rythme de vie : ${d.lifestyle}
-- Régime : ${d.diet} | Repas/jour : ${d.meals_per_day}
-- Allergies : ${d.allergies || "Aucune"} | Aliments détestés : ${d.hated_foods || "Aucun"}
-- Budget : ${d.food_budget}
-- Médicaments : ${d.medications || "Aucun"}
+## CONTEXTE MADAGASCAR — utiliser UNIQUEMENT ces aliments locaux
+Protéines: poulet local, tilapia, sardines en boîte, oeufs, lentilles, haricots, tofu
+Glucides: riz complet, patate douce, banane, avoine, pain complet, manioc
+Lipides: huile de coco, cacahuètes, avocat local, noix de coco
+Légumes: brèdes mouroum (moringa), brèdes mafana, chou, carottes, tomates, haricots verts
+Fruits: papaye, goyave, ananas, mangue, pastèque
 
 ---
 
-INSTRUCTIONS :
-1. Utilise EXACTEMENT les calories et macros calculés ci-dessus
-2. Respecte STRICTEMENT les aliments interdits et obligatoires
-3. Le meal_plan_example doit être détaillé avec quantités en grammes pour chaque repas (petit-déjeuner, collation, déjeuner, collation, dîner)
-4. Le planning sportif doit respecter les règles sportives du profil
-5. Réponds UNIQUEMENT avec le JSON ci-dessous, rien d'autre
+Réponds UNIQUEMENT avec ce JSON (sois CONCIS pour chaque champ texte) :
 
 {
-  "summary": "Résumé 3-4 lignes de la stratégie globale adaptée au profil",
+  "summary": "Résumé 2-3 lignes max",
+  "coach_case_analysis": "Analyse du cas en 3-4 lignes",
   "nutrition": {
     "daily_calories": ${macros.calories},
     "protein_g": ${macros.protein},
     "carbs_g": ${macros.carbs},
     "fats_g": ${macros.fats},
     "hydration_L": ${macros.hydration},
-    "meal_plan_example": "Petit-déjeuner (7h) : [détail avec grammes]. Collation (10h) : [détail]. Déjeuner (13h) : [détail avec grammes]. Collation (16h) : [détail]. Dîner (19h) : [détail avec grammes]",
-    "foods_to_favor": ["minimum 10 aliments adaptés au profil"],
-    "foods_to_avoid": ["minimum 8 aliments interdits pour ce profil"],
+    "meal_plan_example": "Petit-déj: [aliment+grammes]. Collation: [aliment]. Déjeuner: [aliment+grammes]. Collation: [aliment]. Dîner: [aliment+grammes]",
+    "foods_to_favor": ["8 aliments max"],
+    "foods_to_avoid": ["6 aliments max"],
     "supplements": ${JSON.stringify(nutritionRules.supplements.length > 0 ? nutritionRules.supplements : ["Aucun complément spécifique"])}
   },
   "training": {
     "weekly_schedule": [
-      {
-        "day": "Jour selon disponibilités",
-        "type": "Type de séance",
-        "duration_min": 30,
-        "exercises": [
-          { "name": "Nom", "sets": "3", "reps": "12", "rest": "60s", "notes": "conseil technique" }
-        ]
-      }
+      { "day": "Lundi", "type": "Type séance", "duration_min": 30, "exercises": [{ "name": "Exercice", "sets": "3", "reps": "12", "rest": "60s", "notes": "conseil" }] }
     ],
-    "cardio_recommendation": "Cardio adapté aux conditions de santé",
-    "rest_advice": "Conseils récupération personnalisés"
+    "progression_guide": "Guide progression en 2-3 lignes",
+    "cardio_recommendation": "Cardio adapté en 2 lignes",
+    "rest_advice": "Conseils récup en 2 lignes"
   },
   "lifestyle": {
     "sleep_tips": "${routine.sleepRules.join(' | ')}",
     "stress_management": "${routine.stressRules.join(' | ')}",
-    "daily_habits": ["minimum 6 habitudes quotidiennes adaptées au profil"],
-    "things_to_avoid": ["minimum 5 choses à éviter pour ce profil"],
+    "daily_habits": ["6 habitudes max"],
+    "things_to_avoid": ["5 choses max"],
     "morning_routine": ${JSON.stringify(routine.morningRoutine)},
     "evening_routine": ${JSON.stringify(routine.eveningRoutine)},
     "glow_up_tips": ${JSON.stringify(routine.glowUpTips)}
   },
   "monthly_progression": [
-    { "month": 1, "focus": "focus mois 1", "objective": "objectif précis mois 1", "expected_change": "changement physique attendu" },
-    { "month": 2, "focus": "focus mois 2", "objective": "objectif précis mois 2", "expected_change": "changement physique attendu" },
-    { "month": 3, "focus": "focus mois 3", "objective": "objectif précis mois 3", "expected_change": "changement physique attendu" }
+    { "month": 1, "focus": "Focus mois 1", "objective": "Objectif précis", "expected_change": "Changement attendu", "checklist": ["objectif 1", "objectif 2", "objectif 3", "objectif 4", "objectif 5"] },
+    { "month": 2, "focus": "Focus mois 2", "objective": "Objectif précis", "expected_change": "Changement attendu", "checklist": ["objectif 1", "objectif 2", "objectif 3", "objectif 4", "objectif 5"] },
+    { "month": 3, "focus": "Focus mois 3", "objective": "Objectif précis", "expected_change": "Changement attendu", "checklist": ["objectif 1", "objectif 2", "objectif 3", "objectif 4", "objectif 5"] }
   ],
-  "expected_results": "Résultats réalistes et précis à 3 mois (poids, mesures, énergie, forme)",
-  "coach_message": "Message personnel motivant qui mentionne le prénom et l'objectif spécifique"
+  "expected_results": "Résultats réalistes en 2-3 lignes",
+  "coach_message": "Message motivant personnalisé en 2 lignes",
+  "coaching_notes": "Notes coach confidentielles en 2-3 lignes"
 }`;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
 export async function generateCoachProgram(formData: FormData): Promise<CoachProgram> {
   const prompt = buildPrompt(formData);
+  const madagascarFoodLibrary = getMadagascarFoodLibrary(formData);
 
   const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST",
@@ -486,7 +373,7 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
       model: "mistral-small-latest",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.4,
-      max_tokens: 8000,
+      max_tokens: 4000,
       response_format: { type: "json_object" },
     }),
   });
@@ -498,17 +385,22 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
 
   const result = await response.json();
   const rawText = result.choices?.[0]?.message?.content || "";
+  const clean = rawText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
-  const clean = rawText
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
-    .trim();
-
+  let program: CoachProgram;
   try {
-    return JSON.parse(clean) as CoachProgram;
+    program = JSON.parse(clean) as CoachProgram;
   } catch {
     const jsonMatch = clean.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return JSON.parse(jsonMatch[0]) as CoachProgram;
-    throw new Error("Impossible de parser la réponse Mistral : " + clean.slice(0, 300));
+    if (jsonMatch) {
+      program = JSON.parse(jsonMatch[0]) as CoachProgram;
+    } else {
+      throw new Error("Impossible de parser la réponse Mistral : " + clean.slice(0, 300));
+    }
   }
+
+  // Injecter la food_library hardcodée — pas générée par Mistral
+  program.food_library = madagascarFoodLibrary;
+
+  return program;
 }
