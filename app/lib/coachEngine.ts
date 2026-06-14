@@ -248,7 +248,6 @@ function getMadagascarFoodLibrary(d: FormData): FoodLibrary {
   { name: "Haricots verts", portion: "100g", calories: 31, protein_g: 1.8, carbs_g: 7, fat_g: 0.1, notes: "Fibres et vitamines" },
   { name: "Anandrano (cresson d'eau)", portion: "100g", calories: 32, protein_g: 2.3, carbs_g: 4.4, fat_g: 0.4, notes: "Légume aquatique local très nutritif, riche en fer et vitamine C" },
 ];
-  ];
 
   const fruits: FoodItem[] = [
     { name: "Papaye", portion: "150g", calories: 60, protein_g: 0.7, carbs_g: 15, fat_g: 0.4, notes: "Très accessible, excellente digestion" },
@@ -308,7 +307,7 @@ ${nutritionRules.supplements.length > 0 ? `- COMPLÉMENTS: ${nutritionRules.supp
 ## CONTEXTE MADAGASCAR — utiliser UNIQUEMENT ces aliments locaux
 Protéines: poulet local, tilapia, sardines en boîte, oeufs, lentilles, haricots, tofu
 Glucides: riz complet, patate douce, banane, avoine, pain complet, manioc
-Lipides: huile de coco, cacahuètes, avocat local, noix de coco
+Lipides: cacahuètes, avocat local, noix de coco
 Légumes: brèdes mouroum (moringa), brèdes mafana, chou, carottes, tomates, haricots verts
 Fruits: papaye, goyave, ananas, mangue, pastèque
 

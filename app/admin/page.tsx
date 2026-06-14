@@ -164,7 +164,7 @@ export default function AdminPage() {
   <span>📚</span>Bibliothèque nutrition
 </button>
 <button
-  onClick={() => router.push("/admin/exercises")}
+  onClick={() => router.push("/admin/exercices")}
   style={{
     width: "100%", display: "flex", alignItems: "center", gap: "10px",
     background: "none", border: "1px solid transparent",

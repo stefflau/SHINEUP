@@ -597,15 +597,17 @@ export default function SubscriberPage() {
             )}
           </div>
         )}
-<ProgressGallery
+
+        {/* ── SUIVI HEBDO ─────────────────────────────────────────────────── */}
+        {tab === "checkins" && (
+          
+          <div>
+            <ProgressGallery
   checkins={checkins}
   goal={formData?.goal || ""}
   initialWeight={parseFloat(formData?.weight || "0")}
   isAdmin={true}
 />
-        {/* ── SUIVI HEBDO ─────────────────────────────────────────────────── */}
-        {tab === "checkins" && (
-          <div>
             <div style={{ color: "#888", fontSize: "13px", marginBottom: "1.5rem" }}>
               {checkins.length === 0
                 ? "L'abonné n'a pas encore soumis de check-in. Il peut le faire depuis son dashboard."

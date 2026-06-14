@@ -31,9 +31,6 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-// ── Composants définis EN DEHORS du composant principal ──────────────────────
-// C'est ça qui règle le bug du curseur qui saute
-
 type ChooseStepProps = {
   method: PaymentMethod | null;
   setMethod: (m: PaymentMethod) => void;
@@ -50,9 +47,9 @@ function ChooseStep({ method, setMethod, loading, onContinue, error }: ChooseSte
       </p>
 
       {[
-        { id: "mvola" as PaymentMethod,        label: "MVola",          sub: "Telma — Paiement mobile",          icon: "📱" },
-        { id: "orange_money" as PaymentMethod, label: "Orange Money",   sub: "Orange Madagascar",                icon: "🟠" },
-        { id: "card" as PaymentMethod,         label: "Carte bancaire", sub: "Visa / Mastercard via PayDunya",   icon: "💳" },
+        { id: "mvola" as PaymentMethod,        label: "MVola",          sub: "Telma — Paiement mobile",        icon: "📱" },
+        { id: "orange_money" as PaymentMethod, label: "Orange Money",   sub: "Orange Madagascar",              icon: "🟠" },
+        { id: "card" as PaymentMethod,         label: "Carte bancaire", sub: "Visa / Mastercard via PayDunya", icon: "💳" },
       ].map((m) => (
         <button
           key={m.id}
@@ -191,23 +188,60 @@ function InstructionsStep({ method, txRef, setTxRef, phone, setPhone, loading, e
   );
 }
 
-// ── Composant principal ──────────────────────────────────────────────────────
 export default function PaymentPage() {
   const [method, setMethod] = useState<PaymentMethod | null>(null);
-  const [step, setStep] = useState<"choose" | "instructions" | "success">("choose");
+  const [step, setStep] = useState<"choose" | "instructions" | "pending" | "success">("choose");
   const [user, setUser] = useState<UserProfile | null>(null);
   const [txRef, setTxRef] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { window.location.href = "/login"; return; }
-      const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
-      const { data: fd } = await supabase.from("form_data").select("name").eq("user_id", data.user.id).single();
-      setUser({ id: data.user.id, email: data.user.email!, whatsapp: profile?.whatsapp || "", name: fd?.name || "" });
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .single();
+
+      const { data: fd } = await supabase
+        .from("form_data")
+        .select("name")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      setUser({
+        id: data.user.id,
+        email: data.user.email!,
+        whatsapp: profile?.whatsapp || "",
+        name: fd?.name || "",
+      });
+
       setPhone(profile?.whatsapp || "");
+
+      // FIX: si abonnement déjà actif → rediriger directement
+      if (profile?.subscription_status === "active") {
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      // FIX: si paiement déjà soumis (pending) → afficher état d'attente, pas d'erreur bloquante
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("id,status")
+        .eq("user_id", data.user.id)
+        .in("status", ["pending", "confirmed"])
+        .maybeSingle();
+
+      if (payment) {
+        setStep("pending");
+      }
+
+      setPageLoading(false);
     });
   }, []);
 
@@ -217,6 +251,20 @@ export default function PaymentPage() {
     setLoading(true);
     setError("");
 
+    // FIX: vérifier une dernière fois qu'il n'y a pas déjà un paiement
+    const { data: existing } = await supabase
+      .from("payments")
+      .select("id")
+      .eq("user_id", user?.id)
+      .in("status", ["pending", "confirmed"])
+      .maybeSingle();
+
+    if (existing) {
+      setStep("pending");
+      setLoading(false);
+      return;
+    }
+
     const { error: dbErr } = await supabase.from("payments").insert([{
       user_id: user?.id,
       email: user?.email,
@@ -224,6 +272,7 @@ export default function PaymentPage() {
       currency: "MGA",
       method,
       transaction_ref: txRef.trim(),
+      phone_number: phone.trim(),
       status: "pending",
     }]);
 
@@ -270,6 +319,12 @@ export default function PaymentPage() {
     }
   };
 
+  if (pageLoading) return (
+    <main style={{ minHeight: "100vh", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: "#F5C842" }}>Chargement...</div>
+    </main>
+  );
+
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a0a", color: "#f0f0f0", display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem 1rem" }}>
       <div style={{ width: "100%", maxWidth: "460px", background: "#141414", borderRadius: "20px", padding: "2rem" }}>
@@ -279,15 +334,35 @@ export default function PaymentPage() {
         </div>
 
         <p style={{ textAlign: "center", fontSize: "13px", color: "#666", marginBottom: "1.5rem" }}>
-          {step === "success" ? "Confirmation" : "Finalise ton abonnement"}
+          {step === "success" || step === "pending" ? "Confirmation" : "Finalise ton abonnement"}
         </p>
 
-        {step !== "success" && (
+        {/* Barre de progression — uniquement sur les étapes actives */}
+        {step !== "success" && step !== "pending" && (
           <div style={{ display: "flex", gap: "6px", marginBottom: "1.5rem" }}>
             {["Méthode", "Instructions", "Confirmation"].map((s, i) => {
               const idx = step === "choose" ? 0 : 1;
               return <div key={i} style={{ flex: 1, height: "3px", borderRadius: "99px", background: i <= idx ? "#F5C842" : "#2a2a2a" }} />;
             })}
+          </div>
+        )}
+
+        {/* FIX: état paiement déjà soumis — message clair et rassurant */}
+        {step === "pending" && (
+          <div style={{ textAlign: "center", padding: "1rem 0" }}>
+            <div style={{ fontSize: "56px", marginBottom: "1rem" }}>⏳</div>
+            <h2 style={{ color: "#F5C842", fontSize: "20px", fontWeight: 700, marginBottom: "8px" }}>Paiement en attente</h2>
+            <p style={{ color: "#888", fontSize: "14px", lineHeight: 1.7, marginBottom: "1.5rem" }}>
+              Ton paiement a bien été reçu et est en cours de vérification par notre équipe.
+              Ton programme sera disponible <strong style={{ color: "#f0f0f0" }}>dans les 48h</strong>.
+            </p>
+            <div style={{ background: "#1a1600", border: "1px solid #3a2e00", borderRadius: "12px", padding: "16px", marginBottom: "1.5rem", fontSize: "13px", color: "#c9a820" }}>
+              📱 On te contactera sur WhatsApp : <strong>{user?.whatsapp}</strong>
+            </div>
+            <button onClick={() => window.location.href = "/dashboard"}
+              style={{ width: "100%", background: "#F5C842", color: "#000", border: "none", padding: "14px", borderRadius: "12px", fontSize: "15px", fontWeight: 600, cursor: "pointer" }}>
+              Accéder à mon espace →
+            </button>
           </div>
         )}
 

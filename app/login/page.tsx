@@ -79,9 +79,6 @@ export default function AuthPage() {
         return;
       }
 
-      if (data.user) {
-        await supabase.from("profiles").insert([{ id: data.user.id, email, whatsapp, gender }]);
-      }
 
       setSuccess("📩 Email envoyé ! Vérifie ta boîte mail pour confirmer ton compte.");
       setLoading(false);

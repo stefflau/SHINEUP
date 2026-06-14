@@ -1,21 +1,17 @@
-// Composant CheckIn avec upload photo et poids
-// À intégrer dans dashboard_page.tsx (modal check-in) et admin_subscriber_page_fixed.tsx
-
 "use client";
 
 import { useState } from "react";
-import {supabase} from "@/app/lib/supabase";
+import { supabase } from "@/app/lib/supabase";
 
 type CheckInFormProps = {
   userId: string;
   email: string;
   currentWeek: number;
-  goal: string; // "perte_poids" | "prise_masse" | "recomposition" etc.
+  goal: string;
   onClose: () => void;
   onSuccess: () => void;
 };
 
-// ── Messages d'encouragement selon objectif et évolution ─────────────────────
 function getEncouragementMessage(
   goal: string,
   previousWeight: number | null,
@@ -27,28 +23,23 @@ function getEncouragementMessage(
       ? "💪 Premier check-in — tu as fait le premier pas, c'est le plus important !"
       : "📊 Continue comme ça, chaque semaine compte !";
   }
-
   const diff = currentWeight - previousWeight;
   const isLoss = goal.toLowerCase().includes("perte") || goal.toLowerCase().includes("poids");
   const isGain = goal.toLowerCase().includes("prise") || goal.toLowerCase().includes("masse");
-
   if (isLoss) {
-    if (diff < -0.5) return `🎉 Incroyable ! Tu as perdu ${Math.abs(diff).toFixed(1)}kg cette semaine — tu es sur la bonne voie, continue !`;
-    if (diff >= -0.5 && diff <= 0) return `✨ ${Math.abs(diff).toFixed(1)}kg de moins — c'est parfait, le corps change progressivement. Tu fais du super boulot !`;
-    if (diff > 0 && diff <= 0.5) return `💙 Légère variation cette semaine — c'est normal ! Le corps fluctue. Reste constante et les résultats viendront.`;
-    if (diff > 0.5) return `🌱 La balance a monté un peu — pas de panique ! Ça peut être de la rétention d'eau ou du muscle. Continue ton programme !`;
+    if (diff < -0.5) return `🎉 Incroyable ! Tu as perdu ${Math.abs(diff).toFixed(1)}kg cette semaine !`;
+    if (diff <= 0) return `✨ ${Math.abs(diff).toFixed(1)}kg de moins — continue !`;
+    if (diff <= 0.5) return `💙 Légère variation — c'est normal, reste constante !`;
+    return `🌱 La balance a monté un peu — pas de panique, c'est souvent de la rétention d'eau !`;
   }
-
   if (isGain) {
-    if (diff > 0.3) return `💪 Excellent ! +${diff.toFixed(1)}kg — tu prends de la masse comme prévu. Les muscles se construisent !`;
-    if (diff >= 0 && diff <= 0.3) return `✨ Progression stable — continue à bien manger et t'entraîner, les résultats arrivent !`;
-    if (diff < 0) return `💙 Légère baisse — vérifie ton apport calorique. Tu manges assez ? N'hésite pas à demander au coach !`;
+    if (diff > 0.3) return `💪 Excellent ! +${diff.toFixed(1)}kg — les muscles se construisent !`;
+    if (diff >= 0) return `✨ Progression stable — continue !`;
+    return `💙 Légère baisse — vérifie ton apport calorique.`;
   }
-
-  // Recomposition ou autre
-  if (diff < -0.3) return `🎉 Super progression ! ${Math.abs(diff).toFixed(1)}kg en moins, ton corps se recompose parfaitement !`;
-  if (diff > 0.3) return `💪 +${diff.toFixed(1)}kg — ton corps évolue, fais confiance au processus !`;
-  return `✨ Poids stable — c'est souvent signe que tu perds de la graisse et gagnes du muscle en même temps. Bravo !`;
+  if (diff < -0.3) return `🎉 ${Math.abs(diff).toFixed(1)}kg en moins, ton corps se recompose !`;
+  if (diff > 0.3) return `💪 +${diff.toFixed(1)}kg — fais confiance au processus !`;
+  return `✨ Poids stable — souvent signe que tu perds de la graisse et gagnes du muscle !`;
 }
 
 export default function CheckInForm({ userId, email, currentWeek, goal, onClose, onSuccess }: CheckInFormProps) {
@@ -66,6 +57,7 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
   const [questions, setQuestions] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [encouragement, setEncouragement] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const inputStyle: React.CSSProperties = {
     width: "100%", background: "#1e1e1e", border: "1px solid #2a2a2a",
@@ -83,19 +75,20 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
 
   const handleWeightChange = async (val: string) => {
     setWeight(val);
-    if (!val) return;
-    // Récupérer le poids précédent pour le message d'encouragement
+    if (!val || isNaN(parseFloat(val))) return;
+
+    // FIX: maybeSingle() au lieu de single() pour éviter le throw si aucun résultat
     const { data: lastCheckin } = await supabase
       .from("weekly_checkins")
       .select("weight_current")
       .eq("user_id", userId)
       .order("week_number", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const msg = getEncouragementMessage(
       goal,
-      lastCheckin?.weight_current || null,
+      lastCheckin?.weight_current ?? null,
       parseFloat(val),
       currentWeek
     );
@@ -104,16 +97,21 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
 
   const submit = async () => {
     setSubmitting(true);
-    let photoUrl = null;
+    setSubmitError("");
+    let photoUrl: string | null = null;
 
-    // Upload photo si présente
+    // Upload photo si présente — erreur non bloquante
     if (photo) {
-      const fileName = `${userId}/week-${currentWeek}-${Date.now()}.jpg`;
+      const ext = photo.name.split(".").pop() || "jpg";
+      const fileName = `${userId}/week-${currentWeek}-${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage
         .from("progress-photos")
         .upload(fileName, photo, { contentType: photo.type, upsert: true });
 
-      if (!uploadErr) {
+      if (uploadErr) {
+        // On log mais on ne bloque pas le check-in
+        console.warn("Upload photo échoué:", uploadErr.message);
+      } else {
         const { data: urlData } = supabase.storage
           .from("progress-photos")
           .getPublicUrl(fileName);
@@ -121,12 +119,12 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
       }
     }
 
-    // Enregistrer le check-in
-    await supabase.from("weekly_checkins").insert([{
+    // Insert check-in
+    const { error: insertErr } = await supabase.from("weekly_checkins").insert([{
       user_id: userId,
       email,
       week_number: currentWeek,
-      weight_current: parseFloat(weight) || null,
+      weight_current: weight ? parseFloat(weight) : null,
       photo_url: photoUrl,
       energy_level: energyLevel,
       sleep_quality: sleepQuality,
@@ -134,13 +132,20 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
       training_done: trainingDone,
       nutrition_score: nutritionScore,
       water_intake: waterIntake,
-      wins,
-      struggles,
-      questions,
+      wins: wins.trim() || null,
+      struggles: struggles.trim() || null,
+      questions: questions.trim() || null,
       check_date: new Date().toISOString().split("T")[0],
+      coach_replied: false,
     }]);
 
     setSubmitting(false);
+
+    if (insertErr) {
+      setSubmitError("Erreur lors de l'envoi : " + insertErr.message);
+      return;
+    }
+
     onSuccess();
   };
 
@@ -148,7 +153,6 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
     <div style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "#000000cc", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "1rem" }}>
       <div style={{ background: "#141414", borderRadius: "20px", border: "1px solid #2a2a2a", width: "100%", maxWidth: "500px", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-        {/* Header */}
         <div style={{ padding: "1.2rem 1.5rem", borderBottom: "1px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "15px" }}>Check-in — Semaine {currentWeek}</div>
@@ -157,7 +161,6 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: "22px" }}>×</button>
         </div>
 
-        {/* Contenu scrollable */}
         <div style={{ flex: 1, overflowY: "auto", padding: "1.5rem" }}>
 
           {/* Poids */}
@@ -241,9 +244,14 @@ export default function CheckInForm({ userId, email, currentWeek, goal, onClose,
               />
             </div>
           ))}
+
+          {submitError && (
+            <div style={{ background: "#3a0a0a", border: "1px solid #7a1a1a", borderRadius: "10px", padding: "12px", fontSize: "13px", color: "#f87171", marginBottom: "12px" }}>
+              {submitError}
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
         <div style={{ padding: "1rem 1.5rem", borderTop: "1px solid #1e1e1e", flexShrink: 0 }}>
           <button onClick={submit} disabled={submitting} style={{
             width: "100%", background: submitting ? "#888" : "#F5C842",
