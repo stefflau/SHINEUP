@@ -280,7 +280,7 @@ function buildPrompt(d: FormData): string {
   const sportRules = getSportRules(d);
   const routine = getLifestyleRoutine(d);
 
-  return `Tu es un coach sportif et nutritionniste expert. Génère un programme sur 3 mois STRICT et CONCIS et soit loique dans les choix d'aliments proposer surtout les collations.
+  return `Tu es un coach sportif et nutritionniste expert. Génère un programme sur 3 mois STRICT et CONCIS
 
 ## PROFIL
 - ${d.name} | ${d.age} ans | ${d.gender} | ${d.city}
