@@ -1,5 +1,5 @@
 "use client";
-export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import CheckInForm from "@/components/CheckInForm";
@@ -375,8 +375,8 @@ export default function DashboardPage() {
         </div>
       </div>
       {[
-        { text: "Je suis fort(e), capable et déterminé(e). Rien ne peut m'arrêter.", emoji: "💪" },
-        { text: "Je m'accepte tel(le) que je suis aujourd'hui, tout en devenant meilleur(e) chaque jour.", emoji: "💛" },
+        { text: "Je suis forte, capable et déterminée. Rien ne peut m'arrêter.", emoji: "💪" },
+        { text: "Je m'accepte telle que je suis aujourd'hui, tout en devenant meilleure chaque jour.", emoji: "💛" },
         { text: "Ma journée sera merveilleuse. Tout se passe pour mon plus grand bien.", emoji: "✨" },
       ].map((inc, i) => (
         <div key={i} style={{
@@ -412,13 +412,13 @@ export default function DashboardPage() {
         </div>
       </div>
       {[
-        { text: "Je suis reconnaissant(e) pour mon corps qui travaille dur pour moi chaque jour.", emoji: "🙏" },
+        { text: "Je suis reconnaissante pour mon corps qui travaille dur pour moi chaque jour.", emoji: "🙏" },
         { text: "Je remercie pour les petites victoires d'aujourd'hui, même les plus invisibles.", emoji: "🌟" },
-        { text: "Je suis reconnaissant(e) pour cette version de moi qui n'abandonne pas.", emoji: "💎" },
+        { text: "Je suis reconnaissante pour cette version de moi qui n'abandonne pas.", emoji: "💎" },
       ].map((rec, i) => (
         <div key={i} style={{
           background: "#ffffff08",
-          border: "1px solid #3232c9",
+          border: "1px solid #1a1a3a",
           borderRadius: "10px",
           padding: "12px 14px",
           marginBottom: "8px",

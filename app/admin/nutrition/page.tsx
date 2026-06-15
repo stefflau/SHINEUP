@@ -10,7 +10,7 @@ const NUTRITION_DB = {
     description: "Construisent et réparent les muscles. Besoin : 1.6-2.4g/kg/jour selon objectif.",
     items: [
       { name: "Poulet (blanc)", portion: "100g", cal: 165, prot: 31, gluc: 0, lip: 3.6, info: "Meilleure source protéique accessible à Tana. ~3000-5000 Ar/100g" },
-      { name: "Tilapia grillé", portion: "100g", cal: 128, prot: 26, gluc: 0, lip: 2.7, info: "Poisson local le plus économique. Riche en protéines maigres" },
+      { name: "Tilapia", portion: "100g", cal: 128, prot: 26, gluc: 0, lip: 2.7, info: "Poisson local le plus économique. Riche en protéines maigres" },
       { name: "Capitaine grillé", portion: "100g", cal: 140, prot: 28, gluc: 0, lip: 3.2, info: "Poisson local savoureux, disponible au marché" },
       { name: "Sardines en boîte", portion: "100g", cal: 208, prot: 25, gluc: 0, lip: 12, info: "Saupiquet disponible partout. Riche en oméga-3 cardioprotecteurs" },
       { name: "Thon en boîte", portion: "100g", cal: 184, prot: 30, gluc: 0, lip: 6, info: "Pratique et économique. Bon pour salades et sandwichs" },
