@@ -362,65 +362,214 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── LIFESTYLE ───────────────────────────────────────────────────── */}
-        {tab === "lifestyle" && prog?.lifestyle && (
+       {/* ── LIFESTYLE ───────────────────────────────────────────────────── */}
+{tab === "lifestyle" && prog?.lifestyle && (
+  <div>
+    {/* Incantations matin */}
+    <div style={{ background: "linear-gradient(135deg, #1a1200, #1a0d00)", border: "1px solid #3a2e00", borderRadius: "14px", padding: "20px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+        <span style={{ fontSize: "22px" }}>🌅</span>
+        <div>
+          <div style={{ color: "#F5C842", fontSize: "14px", fontWeight: 600 }}>Incantations du matin</div>
+          <div style={{ color: "#666", fontSize: "12px" }}>À répéter à voix haute, avec conviction, dès le réveil</div>
+        </div>
+      </div>
+      {[
+        { text: "Je suis forte, capable et déterminée. Rien ne peut m'arrêter.", emoji: "💪" },
+        { text: "Je m'accepte telle que je suis aujourd'hui, tout en devenant meilleure chaque jour.", emoji: "💛" },
+        { text: "Ma journée sera merveilleuse. Tout se passe pour mon plus grand bien.", emoji: "✨" },
+      ].map((inc, i) => (
+        <div key={i} style={{
+          background: "#ffffff08",
+          border: "1px solid #3a2e0066",
+          borderRadius: "10px",
+          padding: "12px 14px",
+          marginBottom: "8px",
+          display: "flex",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}>
+          <span style={{ fontSize: "18px", flexShrink: 0, marginTop: "1px" }}>{inc.emoji}</span>
           <div>
-            {prog.lifestyle.morning_routine && prog.lifestyle.morning_routine.length > 0 && (
-              <div style={{ background: "#1a1600", border: "1px solid #3a2e00", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-                <div style={{ color: "#F5C842", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>🌅 Routine Matin SHINEUP</div>
-                {prog.lifestyle.morning_routine.map((h, i) => (
-                  <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #2a2000", lineHeight: 1.6 }}>{h}</div>
-                ))}
-              </div>
-            )}
-
-            {prog.lifestyle.evening_routine && prog.lifestyle.evening_routine.length > 0 && (
-              <div style={{ background: "#0d0d1a", border: "1px solid #1a1a3a", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-                <div style={{ color: "#88aaff", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>🌙 Routine Soir SHINEUP</div>
-                {prog.lifestyle.evening_routine.map((h, i) => (
-                  <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #1a1a3a", lineHeight: 1.6 }}>{h}</div>
-                ))}
-              </div>
-            )}
-
-            <div style={{ background: "#141414", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-              <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "8px" }}>😴 Conseils Sommeil</div>
-              <p style={{ color: "#ccc", fontSize: "14px", margin: 0, lineHeight: 1.7 }}>{prog.lifestyle.sleep_tips}</p>
-            </div>
-
-            <div style={{ background: "#141414", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-              <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "8px" }}>🧘 Gestion du Stress</div>
-              <p style={{ color: "#ccc", fontSize: "14px", margin: 0, lineHeight: 1.7 }}>{prog.lifestyle.stress_management}</p>
-            </div>
-
-            {prog.lifestyle.glow_up_tips && prog.lifestyle.glow_up_tips.length > 0 && (
-              <div style={{ background: "linear-gradient(135deg, #1a1200, #1a0a1a)", border: "1px solid #F5C842", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-                <div style={{ color: "#F5C842", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>✨ Ton Glow Up Guide</div>
-                {prog.lifestyle.glow_up_tips.map((tip, i) => (
-                  <div key={i} style={{ color: "#ddd", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #2a1a00", lineHeight: 1.6 }}>{tip}</div>
-                ))}
-              </div>
-            )}
-
-            <div style={{ background: "#0d1a0d", border: "1px solid #1a3a1a", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
-              <div style={{ color: "#5faa5f", fontSize: "12px", fontWeight: 500, marginBottom: "10px" }}>✅ Habitudes Quotidiennes</div>
-              {prog.lifestyle.daily_habits?.map((h, i) => (
-                <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "5px 0", borderBottom: "1px solid #1a3a1a", display: "flex", gap: "8px" }}>
-                  <span style={{ color: "#5faa5f" }}>•</span> {h}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: "#1a0d0d", border: "1px solid #3a1a1a", borderRadius: "14px", padding: "16px" }}>
-              <div style={{ color: "#f87171", fontSize: "12px", fontWeight: 500, marginBottom: "10px" }}>❌ Choses à Éviter</div>
-              {prog.lifestyle.things_to_avoid?.map((h, i) => (
-                <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "5px 0", borderBottom: "1px solid #3a1a1a", display: "flex", gap: "8px" }}>
-                  <span style={{ color: "#f87171" }}>•</span> {h}
-                </div>
-              ))}
+            <div style={{ color: "#c9a820", fontSize: "13px", lineHeight: 1.6, fontStyle: "italic" }}>
+              &ldquo;{inc.text}&rdquo;
             </div>
           </div>
-        )}
+        </div>
+      ))}
+      <div style={{ color: "#555", fontSize: "11px", marginTop: "10px", lineHeight: 1.6 }}>
+        💡 Répète chaque phrase 3 fois, les yeux fermés, en ressentant les mots dans ton corps.
+      </div>
+    </div>
+
+    {/* Reconnaissances du soir */}
+    <div style={{ background: "linear-gradient(135deg, #0a0d1a, #0d0a1a)", border: "1px solid #1a1a3a", borderRadius: "14px", padding: "20px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+        <span style={{ fontSize: "22px" }}>🌙</span>
+        <div>
+          <div style={{ color: "#88aaff", fontSize: "14px", fontWeight: 600 }}>Reconnaissances du soir</div>
+          <div style={{ color: "#666", fontSize: "12px" }}>3 gratitudes à ressentir avant de dormir</div>
+        </div>
+      </div>
+      {[
+        { text: "Je suis reconnaissante pour mon corps qui travaille dur pour moi chaque jour.", emoji: "🙏" },
+        { text: "Je remercie pour les petites victoires d'aujourd'hui, même les plus invisibles.", emoji: "🌟" },
+        { text: "Je suis reconnaissante pour cette version de moi qui n'abandonne pas.", emoji: "💎" },
+      ].map((rec, i) => (
+        <div key={i} style={{
+          background: "#ffffff08",
+          border: "1px solid #1a1a3a",
+          borderRadius: "10px",
+          padding: "12px 14px",
+          marginBottom: "8px",
+          display: "flex",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}>
+          <span style={{ fontSize: "18px", flexShrink: 0, marginTop: "1px" }}>{rec.emoji}</span>
+          <div style={{ color: "#88aaff", fontSize: "13px", lineHeight: 1.6, fontStyle: "italic" }}>
+            &ldquo;{rec.text}&rdquo;
+          </div>
+        </div>
+      ))}
+      <div style={{ color: "#555", fontSize: "11px", marginTop: "10px", lineHeight: 1.6 }}>
+        💡 Écris tes propres gratitudes dans un carnet — 3 choses spécifiques à ta journée.
+      </div>
+    </div>
+
+    {/* Guide de manifestation */}
+    <div style={{ background: "linear-gradient(135deg, #100a1a, #1a0a14)", border: "1px solid #F5C84233", borderRadius: "14px", padding: "20px", marginBottom: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
+        <span style={{ fontSize: "22px" }}>🔮</span>
+        <div>
+          <div style={{ color: "#F5C842", fontSize: "14px", fontWeight: 600 }}>Guide de manifestation</div>
+          <div style={{ color: "#666", fontSize: "12px" }}>Loi de l&apos;attraction — visualisation avant de dormir</div>
+        </div>
+      </div>
+
+      <p style={{ color: "#ccc", fontSize: "13px", lineHeight: 1.8, margin: "0 0 16px" }}>
+        La manifestation, c&apos;est l&apos;art d&apos;aligner tes pensées, tes émotions et tes actions vers ce que tu désires vraiment. Ton cerveau ne fait pas la différence entre ce que tu imagines intensément et ce qui est réel — utilise ça.
+      </p>
+
+      <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "12px" }}>
+        Protocole visualisation — 5 min avant de dormir
+      </div>
+
+      {[
+        {
+          step: "1",
+          title: "Pose et respiration",
+          desc: "Allonge-toi, ferme les yeux. Prends 3 grandes respirations lentes. Relâche chaque tension à chaque expiration.",
+          color: "#88aaff",
+        },
+        {
+          step: "2",
+          title: "Visualise ta version future",
+          desc: "Imagine-toi dans 3 mois. Ton corps tel que tu le veux. Comment tu te sens dans cet élan ? Quelle énergie tu dégages ? Ressens-le vraiment.",
+          color: "#c9a820",
+        },
+        {
+          step: "3",
+          title: "Ancre l'émotion",
+          desc: "Ce n'est pas juste une image — c'est une sensation. Fierté, confiance, légèreté. Reste dans cet état le plus longtemps possible.",
+          color: "#5faa5f",
+        },
+        {
+          step: "4",
+          title: "Affirme et lâche prise",
+          desc: "Dis intérieurement : \"C'est déjà mien. Je fais confiance au processus.\" Puis dors dans cet état de certitude.",
+          color: "#F5C842",
+        },
+      ].map((s) => (
+        <div key={s.step} style={{
+          display: "flex",
+          gap: "14px",
+          marginBottom: "14px",
+          alignItems: "flex-start",
+        }}>
+          <div style={{
+            width: "28px", height: "28px", borderRadius: "50%",
+            background: s.color + "22",
+            border: `1px solid ${s.color}44`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: s.color, fontWeight: 700, fontSize: "12px",
+            flexShrink: 0,
+          }}>
+            {s.step}
+          </div>
+          <div>
+            <div style={{ color: s.color, fontSize: "13px", fontWeight: 500, marginBottom: "4px" }}>{s.title}</div>
+            <div style={{ color: "#888", fontSize: "13px", lineHeight: 1.6 }}>{s.desc}</div>
+          </div>
+        </div>
+      ))}
+
+      <div style={{ background: "#ffffff08", border: "1px solid #F5C84222", borderRadius: "10px", padding: "14px", marginTop: "6px" }}>
+        <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "6px" }}>✨ Le secret de la loi de l&apos;attraction</div>
+        <p style={{ color: "#888", fontSize: "13px", lineHeight: 1.7, margin: 0 }}>
+          Ce n&apos;est pas juste de penser positif — c&apos;est <span style={{ color: "#c9a820" }}>agir comme si tu étais déjà cette personne</span>. Mange comme elle. Bouge comme elle. Parle d&apos;elle au présent. Ton identité change, et ton corps suit.
+        </p>
+      </div>
+    </div>
+
+    {/* Routine matin */}
+    {prog.lifestyle.morning_routine && prog.lifestyle.morning_routine.length > 0 && (
+      <div style={{ background: "#1a1600", border: "1px solid #3a2e00", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+        <div style={{ color: "#F5C842", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>🌅 Routine Matin SHINEUP</div>
+        {prog.lifestyle.morning_routine.map((h, i) => (
+          <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #2a2000", lineHeight: 1.6 }}>{h}</div>
+        ))}
+      </div>
+    )}
+
+    {/* Routine soir */}
+    {prog.lifestyle.evening_routine && prog.lifestyle.evening_routine.length > 0 && (
+      <div style={{ background: "#0d0d1a", border: "1px solid #1a1a3a", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+        <div style={{ color: "#88aaff", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>🌙 Routine Soir SHINEUP</div>
+        {prog.lifestyle.evening_routine.map((h, i) => (
+          <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #1a1a3a", lineHeight: 1.6 }}>{h}</div>
+        ))}
+      </div>
+    )}
+
+    <div style={{ background: "#141414", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+      <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "8px" }}>😴 Conseils Sommeil</div>
+      <p style={{ color: "#ccc", fontSize: "14px", margin: 0, lineHeight: 1.7 }}>{prog.lifestyle.sleep_tips}</p>
+    </div>
+
+    <div style={{ background: "#141414", border: "1px solid #1e1e1e", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+      <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "8px" }}>🧘 Gestion du Stress</div>
+      <p style={{ color: "#ccc", fontSize: "14px", margin: 0, lineHeight: 1.7 }}>{prog.lifestyle.stress_management}</p>
+    </div>
+
+    {prog.lifestyle.glow_up_tips && prog.lifestyle.glow_up_tips.length > 0 && (
+      <div style={{ background: "linear-gradient(135deg, #1a1200, #1a0a1a)", border: "1px solid #F5C842", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+        <div style={{ color: "#F5C842", fontSize: "13px", fontWeight: 600, marginBottom: "12px" }}>✨ Ton Glow Up Guide</div>
+        {prog.lifestyle.glow_up_tips.map((tip, i) => (
+          <div key={i} style={{ color: "#ddd", fontSize: "13px", padding: "6px 0", borderBottom: "1px solid #2a1a00", lineHeight: 1.6 }}>{tip}</div>
+        ))}
+      </div>
+    )}
+
+    <div style={{ background: "#0d1a0d", border: "1px solid #1a3a1a", borderRadius: "14px", padding: "16px", marginBottom: "10px" }}>
+      <div style={{ color: "#5faa5f", fontSize: "12px", fontWeight: 500, marginBottom: "10px" }}>✅ Habitudes Quotidiennes</div>
+      {prog.lifestyle.daily_habits?.map((h, i) => (
+        <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "5px 0", borderBottom: "1px solid #1a3a1a", display: "flex", gap: "8px" }}>
+          <span style={{ color: "#5faa5f" }}>•</span> {h}
+        </div>
+      ))}
+    </div>
+
+    <div style={{ background: "#1a0d0d", border: "1px solid #3a1a1a", borderRadius: "14px", padding: "16px" }}>
+      <div style={{ color: "#f87171", fontSize: "12px", fontWeight: 500, marginBottom: "10px" }}>❌ Choses à Éviter</div>
+      {prog.lifestyle.things_to_avoid?.map((h, i) => (
+        <div key={i} style={{ color: "#ccc", fontSize: "13px", padding: "5px 0", borderBottom: "1px solid #3a1a1a", display: "flex", gap: "8px" }}>
+          <span style={{ color: "#f87171" }}>•</span> {h}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* ── SUIVI ───────────────────────────────────────────────────────── */}
         {tab === "suivi" && (
