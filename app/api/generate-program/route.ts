@@ -5,13 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateCoachProgram } from "../../lib/coachEngine";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+
 
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
     const { formData, userId, email } = await req.json();
 
     if (!formData || !userId) {
