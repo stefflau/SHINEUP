@@ -304,7 +304,7 @@ ${nutritionRules.forbidden.length > 0 ? `- INTERDITS: ${nutritionRules.forbidden
 ${nutritionRules.mandatory.length > 0 ? `- OBLIGATOIRES: ${nutritionRules.mandatory.join(", ")}` : ""}
 ${nutritionRules.supplements.length > 0 ? `- COMPLÉMENTS: ${nutritionRules.supplements.join(" | ")}` : ""}
 
-## CONTEXTE MADAGASCAR — utiliser UNIQUEMENT ces aliments locaux
+## CONTEXTE MADAGASCAR — utiliser UNIQUEMENT ces aliments locaux mais n'oublie pas de voir la logique des collations que tu proposes
 Protéines: poulet local, tilapia, sardines en boîte, oeufs, lentilles, haricots, tofu
 Glucides: riz complet, patate douce, banane, avoine, pain complet, manioc
 Lipides: cacahuètes, avocat local, noix de coco
