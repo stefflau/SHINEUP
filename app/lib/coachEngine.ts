@@ -203,7 +203,7 @@ function getMadagascarFoodLibrary(d: FormData): FoodLibrary {
   const proteins: FoodItem[] = [];
   if (!diet.includes("vegan") && !diet.includes("végét")) {
     proteins.push({ name: "Poulet local grillé", portion: "100g", calories: 165, protein_g: 31, carbs_g: 0, fat_g: 3.6, notes: "Très accessible à Tana, ~3000-5000 Ar/100g" });
-    proteins.push({ name: "Tilapia grillé", portion: "100g", calories: 128, protein_g: 26, carbs_g: 0, fat_g: 2.7, notes: "Poisson local économique" });
+    proteins.push({ name: "Tilapia", portion: "100g", calories: 128, protein_g: 26, carbs_g: 0, fat_g: 2.7, notes: "Poisson local économique" });
     proteins.push({ name: "Sardines en boîte (Saupiquet)", portion: "100g", calories: 208, protein_g: 25, carbs_g: 0, fat_g: 12, notes: "Disponible partout, riche en oméga-3" });
     proteins.push({ name: "Œuf entier", portion: "1 unité (60g)", calories: 86, protein_g: 6, carbs_g: 0.6, fat_g: 6, notes: "~500 Ar/unité, le moins cher" });
   }
@@ -280,7 +280,7 @@ function buildPrompt(d: FormData): string {
   const sportRules = getSportRules(d);
   const routine = getLifestyleRoutine(d);
 
-  return `Tu es un coach sportif et nutritionniste expert. Génère un programme sur 3 mois STRICT et CONCIS.
+  return `Tu es un coach sportif et nutritionniste expert. Génère un programme sur 3 mois STRICT et CONCIS et soit loique dans les choix d'aliments proposer surtout les collations.
 
 ## PROFIL
 - ${d.name} | ${d.age} ans | ${d.gender} | ${d.city}
