@@ -24,7 +24,7 @@ export default function AuthPage() {
   ];
 
   const quotes = [
-    { text: "Ton corps peut tout supporter. C'est ton esprit qu'il faut convaincre.", author: "— Mentalité ShineUp" },
+    { text: "Ton corps peut tout supporter! C'est ton esprit qu'il faut convaincre.", author: "— Mentalité ShineUp" },
     { text: "La discipline, c'est choisir entre ce que tu veux maintenant et ce que tu veux le plus.", author: "— Abraham Lincoln" },
     { text: "Chaques efforts est un investissement dans la meilleure version de toi-même.", author: "— Coach ShineUp" },
     { text: "La motivation ne suffit pas, il faut de la discipline.", author: "— Mentalité ShineUp" },
