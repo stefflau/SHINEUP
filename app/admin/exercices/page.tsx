@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+export const dynamic = "force-dynamic";
 const EXERCISES_DB = {
   dos: {
     label: "🔙 Dos",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+export const dynamic = "force-dynamic";
 // ─── Base de données nutritionnelle Madagascar ────────────────────────────────
 const NUTRITION_DB = {
   proteines: {
