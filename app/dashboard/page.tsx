@@ -79,9 +79,17 @@ type FormDataType = {
   name: string;
   goal: string;
   weight: string;
+  gender: string;
 };
 
 type Tab = "programme" | "nutrition" | "sport" | "lifestyle" | "suivi";
+
+// ─── Helper accord de genre ───────────────────────────────────────────────────
+// Retourne la forme féminine ou masculine selon le genre du profil
+function g(gender: string | undefined, feminine: string, masculine: string): string {
+  const isFeminine = !gender || gender === "Femme" || gender.toLowerCase() === "femme";
+  return isFeminine ? feminine : masculine;
+}
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("programme");
@@ -103,7 +111,7 @@ export default function DashboardPage() {
       // Le statut "actif" est vérifié via profile.subscription_status
       supabase.from("coaching_plan").select("*").eq("user_id", uid).order("generated_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("weekly_checkins").select("*").eq("user_id", uid).order("week_number", { ascending: false }),
-      supabase.from("form_data").select("name,goal,weight").eq("user_id", uid).maybeSingle(),
+      supabase.from("form_data").select("name,goal,weight,gender").eq("user_id", uid).maybeSingle(),
     ]);
 
     setProfile(prof ? { ...prof, id: uid } : null);
@@ -375,8 +383,8 @@ export default function DashboardPage() {
         </div>
       </div>
       {[
-        { text: "Je suis forte, capable et déterminée. Rien ne peut m'arrêter.", emoji: "💪" },
-        { text: "Je m'accepte telle que je suis aujourd'hui, tout en devenant meilleure chaque jour.", emoji: "💛" },
+        { text: g(formData?.gender, "Je suis forte, capable et déterminée. Rien ne peut m'arrêter.", "Je suis fort, capable et déterminé. Rien ne peut m'arrêter."), emoji: "💪" },
+        { text: g(formData?.gender, "Je m'accepte telle que je suis aujourd'hui, tout en devenant meilleure chaque jour.", "Je m'accepte tel que je suis aujourd'hui, tout en devenant meilleur chaque jour."), emoji: "💛" },
         { text: "Ma journée sera merveilleuse. Tout se passe pour mon plus grand bien.", emoji: "✨" },
       ].map((inc, i) => (
         <div key={i} style={{
@@ -412,9 +420,9 @@ export default function DashboardPage() {
         </div>
       </div>
       {[
-        { text: "Je suis reconnaissante pour mon corps qui travaille dur pour moi chaque jour.", emoji: "🙏" },
+        { text: g(formData?.gender, "Je suis reconnaissante pour mon corps qui travaille dur pour moi chaque jour.", "Je suis reconnaissant pour mon corps qui travaille dur pour moi chaque jour."), emoji: "🙏" },
         { text: "Je remercie pour les petites victoires d'aujourd'hui, même les plus invisibles.", emoji: "🌟" },
-        { text: "Je suis reconnaissante pour cette version de moi qui n'abandonne pas.", emoji: "💎" },
+        { text: g(formData?.gender, "Je suis reconnaissante pour cette version de moi qui n'abandonne pas.", "Je suis reconnaissant pour cette version de moi qui n'abandonne pas."), emoji: "💎" },
       ].map((rec, i) => (
         <div key={i} style={{
           background: "#ffffff08",
@@ -459,7 +467,7 @@ export default function DashboardPage() {
         {
           step: "1",
           title: "Pose et respiration",
-          desc: "Allonge-toi, ferme les yeux. Prends 3 grandes respirations lentes. Relâche chaque tension à chaque expiration.",
+          desc: g(formData?.gender, "Allonge-toi, ferme les yeux. Prends 3 grandes respirations lentes. Relâche chaque tension à chaque expiration.", "Allonge-toi, ferme les yeux. Prends 3 grandes respirations lentes. Relâche chaque tension à chaque expiration."),
           color: "#88aaff",
         },
         {
@@ -507,7 +515,13 @@ export default function DashboardPage() {
       <div style={{ background: "#ffffff08", border: "1px solid #F5C84222", borderRadius: "10px", padding: "14px", marginTop: "6px" }}>
         <div style={{ color: "#F5C842", fontSize: "12px", fontWeight: 500, marginBottom: "6px" }}>✨ Le secret de la loi de l&apos;attraction</div>
         <p style={{ color: "#888", fontSize: "13px", lineHeight: 1.7, margin: 0 }}>
-          Ce n&apos;est pas juste de penser positif — c&apos;est <span style={{ color: "#c9a820" }}>agir comme si tu étais déjà cette personne</span>. Mange comme elle. Bouge comme elle. Parle d&apos;elle au présent. Ton identité change, et ton corps suit.
+          Ce n&apos;est pas juste de penser positif — c&apos;est{" "}
+          <span style={{ color: "#c9a820" }}>agir comme si tu étais déjà cette personne</span>.{" "}
+          {g(formData?.gender,
+            "Mange comme elle. Bouge comme elle. Parle d'elle au présent.",
+            "Mange comme lui. Bouge comme lui. Parle de lui au présent."
+          )}{" "}
+          Ton identité change, et ton corps suit.
         </p>
       </div>
     </div>
