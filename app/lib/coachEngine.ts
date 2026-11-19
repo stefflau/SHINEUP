@@ -373,8 +373,8 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
       "Content-Type": "application/json",
       "Authorization": `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+       body: JSON.stringify({
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
@@ -383,7 +383,8 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
         { role: "user", content: prompt },
       ],
       temperature: 0.4,
-      max_tokens: 4000,
+      max_tokens: 6000,
+      reasoning_effort: "low",
       response_format: { type: "json_object" },
     }),
   });
