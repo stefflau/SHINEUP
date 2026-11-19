@@ -357,20 +357,31 @@ Réponds UNIQUEMENT avec ce JSON (sois CONCIS pour chaque champ texte) :
 }`;
 }
 
-// ─── Fonction principale ──────────────────────────────────────────────────────
+// ─── Fonction principale (version Groq) ───────────────────────────────────────
 export async function generateCoachProgram(formData: FormData): Promise<CoachProgram> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY manquante : ajoute-la dans les variables d'environnement.");
+  }
+
   const prompt = buildPrompt(formData);
   const madagascarFoodLibrary = getMadagascarFoodLibrary(formData);
 
-  const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.MISTRAL_API_KEY}`,
+      "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "mistral-small-latest",
-      messages: [{ role: "user", content: prompt }],
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: "Tu es un coach sportif et nutritionniste. Tu réponds toujours en français, uniquement avec un objet JSON valide, sans texte autour.",
+        },
+        { role: "user", content: prompt },
+      ],
       temperature: 0.4,
       max_tokens: 4000,
       response_format: { type: "json_object" },
@@ -379,7 +390,10 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Mistral API error: ${response.status} — ${errText}`);
+    if (response.status === 429) {
+      throw new Error("Limite Groq atteinte (trop de requêtes ou quota du jour épuisé). Réessaie plus tard.");
+    }
+    throw new Error(`Groq API error: ${response.status} — ${errText}`);
   }
 
   const result = await response.json();
@@ -394,11 +408,11 @@ export async function generateCoachProgram(formData: FormData): Promise<CoachPro
     if (jsonMatch) {
       program = JSON.parse(jsonMatch[0]) as CoachProgram;
     } else {
-      throw new Error("Impossible de parser la réponse Mistral : " + clean.slice(0, 300));
+      throw new Error("Impossible de parser la réponse Groq : " + clean.slice(0, 300));
     }
   }
 
-  // Injecter la food_library hardcodée — pas générée par Mistral
+  // Injecter la food_library hardcodée (pas générée par l'IA)
   program.food_library = madagascarFoodLibrary;
 
   return program;
